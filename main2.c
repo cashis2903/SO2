@@ -36,15 +36,17 @@ place place ={false};
 pthread_mutex_t synchro_worker = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t synchro_pass = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t synchro_boss = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t synchro_wr = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t synchro_hr=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t iffreeplace = PTHREAD_COND_INITIALIZER;
 pthread_cond_t ifbossOnline = PTHREAD_COND_INITIALIZER;
 
 
 void draw_legend(){
-  mvprintw(22,61,"P - podanie");
-  mvprintw(23,61,"W - pracownik");
+  mvprintw(20,59," LEGENDA");
+  mvprintw(20,59, "OK - boss dostepny");
+  mvprintw(21,59,"W8 - oczekujemy bossa");
+  mvprintw(22,59,"P - podanie");
+  mvprintw(23,59,"W - pracownik");
   refresh();
 }
 
@@ -251,23 +253,14 @@ draw_legend();
 clear_boss(18,35);
 
 pthread_t workers_thread[workerAmount];
-pthread_t boss,boss1,boss2,boss3,boss4,boss5,boss6,boss7,boss8,boss9;
+pthread_t boss[workerAmount];
 pthread_t hr;
 //pthread_t boss_offline;
 
 
   pthread_create(&hr,NULL,HR_func, NULL);
-  pthread_create(&boss, NULL, boss_func, NULL);
-//  pthread_create(&hr1,NULL,HR_func, NULL);
-  pthread_create(&boss1, NULL, boss_func, NULL);
-//  pthread_create(&hr2,NULL,HR_func, NULL);
-  pthread_create(&boss2, NULL, boss_func, NULL);
-//  pthread_create(&hr3,NULL,HR_func, NULL);
-  pthread_create(&boss3, NULL, boss_func, NULL);
-  //pthread_create(&hr4,NULL,HR_func, NULL);
-  pthread_create(&boss4, NULL, boss_func, NULL);
-//  pthread_create(&hr5,NULL,HR_func, NULL);
-  pthread_create(&boss5, NULL, boss_func, NULL);
+
+
 
 
 //  pthread_create(&boss_offline,NULL,boss_off,NULL);
@@ -276,7 +269,7 @@ pthread_t hr;
 for(int i =1; i<=workerAmount; i++){
 
   pthread_create(&workers_thread[i], NULL, workers_func, NULL);
-
+    pthread_create(&boss[i], NULL, boss_func, NULL);
 }
 
 
