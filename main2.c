@@ -21,8 +21,8 @@ struct boss {
 
 
 
-#define workerAmount 25
-#define passAmount 3
+#define workerAmount 10
+#define passAmount 2
 #define exitkey 113
 
 int howMuchWorkersStand = workerAmount;
@@ -30,19 +30,23 @@ int howMuchWorkersonHoliday=0;
 
 boss boss = {false,0};
 worker workers[workerAmount];
-place places[passAmount] = {false};
+place place ={false};
 
 
 pthread_mutex_t synchro_worker = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t synchro_pass = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t synchro_boss = PTHREAD_MUTEX_INITIALIZER;
-
+pthread_mutex_t synchro_wr = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t synchro_hr=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t iffreeplace = PTHREAD_COND_INITIALIZER;
 pthread_cond_t ifbossOnline = PTHREAD_COND_INITIALIZER;
 
 
-
+void draw_legend(){
+  mvprintw(22,61,"P - podanie");
+  mvprintw(23,61,"W - pracownik");
+  refresh();
+}
 
 
 void draw_boss_table(){
@@ -78,11 +82,12 @@ void draw_worker(int number){
     y = 2+(rand() % 5);
     x = 0+(rand() % 80);
     mvprintw(y,x,"W");
-    //mvprintw(y+1,x,"X");
+
   }
 
   refresh();
 }
+
 /// 20<x<50, 11<y<15 table
 void draw_pass(int number){
   int y,x;
@@ -90,6 +95,7 @@ void draw_pass(int number){
   for(int x_clean=21; x_clean<=50; x_clean++ ){
     for(int y_clean=11; y_clean<=15; y_clean++){
       mvprintw(y_clean,x_clean," ");
+
     }
   }
 
@@ -131,93 +137,99 @@ void draw_boss(int y, int x){
   mvprintw(y+4,x+4, "\\");
   mvprintw(y+4,x+1, "/");
   refresh();
+
 }
 
 void draw_office(){
   int x, y;
   getmaxyx(stdscr, y, x);
   for(int i = 0 ; i < x; i++){
+
     mvprintw(0, x/2 - 8, "OFFICE");
-    mvprintw(1, i, "-");
-    mvprintw(8, i, "-");
+    mvprintw(1, i, "_");
+    mvprintw(8, i, "_");
+
   }
+
   mvprintw(9, x/2 - 10, "BOSS OFFICE ");
   refresh();
 }
 
-void fill_workers_table(){
+/*void fill_workers_table(){
 
     for(int i=0; i<workerAmount; i++){
       workers[i].place = (rand() % passAmount) + 2;
       //printf("Worker %d ma miejsce %d\n",i, workers[i].place );
     }
 }
-
-
+int tmp;
+*/
 void* workers_func(void *args){
   while(1){
+
     pthread_mutex_lock(&synchro_worker);
     pthread_cond_wait(&iffreeplace, &synchro_worker);
-  //  clear_boss(18,32);
     boss.pass++;
-
-    if(boss.pass>passAmount){
-      clear_boss(13,32);
-
-    }
     howMuchWorkersStand--;
     draw_worker(howMuchWorkersStand);
-    usleep(1000*1000);
-    draw_pass(boss.pass);
-    pthread_mutex_unlock(&synchro_worker);
+    pthread_mutex_lock(&synchro_boss);
 
-  }
 
-}
-
-void* boss_off(void *args){
-  while(1){
-    pthread_mutex_lock(&synchro_worker);
-    pthread_cond_wait(&iffreeplace, &synchro_worker);
-    if(boss.pass<5){
-      clear_boss(18,32);
-      pthread_mutex_unlock(&synchro_worker);
+    if(boss.pass>passAmount){
+        place.occupied=true;
+        pthread_cond_broadcast(&iffreeplace);
     }
 
+
+    usleep(1000*1000);
+    draw_pass(boss.pass);
+    pthread_mutex_unlock(&synchro_boss);
+
     pthread_mutex_unlock(&synchro_worker);
+
   }
+
 }
+
 
 
 void* boss_func(void *args){
   while(1){
     pthread_mutex_lock(&synchro_worker);
+
+    pthread_mutex_lock(&synchro_pass);
+    mvprintw(0,0,"W8");
+    pthread_mutex_unlock(&synchro_pass);
+
     pthread_cond_wait(&ifbossOnline, &synchro_worker);
-    if(boss.pass>=passAmount){
-      howMuchWorkersStand= howMuchWorkersStand+boss.pass;
-      howMuchWorkersonHoliday=0;
+
+    pthread_mutex_lock(&synchro_pass);
+    mvprintw(0,0,"OK");
+    pthread_mutex_unlock(&synchro_pass);
+
       draw_boss(18,32);
+      howMuchWorkersonHoliday=0;
+      howMuchWorkersStand= howMuchWorkersStand+boss.pass;
+      usleep(1000*1000);
+      clear_boss(18,32);
+      place.occupied=false;
       boss.pass=0;
       pthread_mutex_unlock(&synchro_worker);
-    }
 
-    pthread_mutex_unlock(&synchro_worker);
   }
 }
 
 void* HR_func(void* args){
   while(1){
     pthread_mutex_lock(&synchro_hr);
-    if(boss.pass==passAmount){
-
-      pthread_cond_broadcast(&ifbossOnline);
-      pthread_mutex_unlock(&synchro_hr);
-
-    }
-    if(boss.pass<passAmount){
+    if(place.occupied==false){
       pthread_cond_broadcast(&iffreeplace);
       pthread_mutex_unlock(&synchro_hr);
 
+    }
+    if(place.occupied==true){
+      pthread_cond_broadcast(&ifbossOnline);
+      pthread_mutex_unlock(&synchro_hr);
     }
   pthread_mutex_unlock(&synchro_hr);
   }
@@ -226,28 +238,45 @@ void* HR_func(void* args){
 
 
 int main(){
+
 srand(time(NULL));
 initscr();
 noecho();
 curs_set(0);
+
 draw_office();
-//draw_worker(workerAmount);
 draw_boss_table();
+draw_legend();
+
 clear_boss(18,35);
 
 pthread_t workers_thread[workerAmount];
-pthread_t boss;
+pthread_t boss,boss1,boss2,boss3,boss4,boss5,boss6,boss7,boss8,boss9;
 pthread_t hr;
 //pthread_t boss_offline;
 
 
   pthread_create(&hr,NULL,HR_func, NULL);
   pthread_create(&boss, NULL, boss_func, NULL);
+//  pthread_create(&hr1,NULL,HR_func, NULL);
+  pthread_create(&boss1, NULL, boss_func, NULL);
+//  pthread_create(&hr2,NULL,HR_func, NULL);
+  pthread_create(&boss2, NULL, boss_func, NULL);
+//  pthread_create(&hr3,NULL,HR_func, NULL);
+  pthread_create(&boss3, NULL, boss_func, NULL);
+  //pthread_create(&hr4,NULL,HR_func, NULL);
+  pthread_create(&boss4, NULL, boss_func, NULL);
+//  pthread_create(&hr5,NULL,HR_func, NULL);
+  pthread_create(&boss5, NULL, boss_func, NULL);
+
+
 //  pthread_create(&boss_offline,NULL,boss_off,NULL);
 
 
 for(int i =1; i<=workerAmount; i++){
+
   pthread_create(&workers_thread[i], NULL, workers_func, NULL);
+
 }
 
 
@@ -258,7 +287,9 @@ for(int i =1; i<=workerAmount; i++){
 
 
 while(1){
+
     int is_exit = getch();
+
     if (is_exit == exitkey){ /// q
       endwin();
       exit(0);
