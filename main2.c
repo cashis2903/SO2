@@ -10,7 +10,7 @@ struct worker {
 };
 
 struct place {
-    bool occupied;
+    bool filled;
 };
 
 struct boss {
@@ -42,7 +42,7 @@ pthread_cond_t ifbossOnline = PTHREAD_COND_INITIALIZER;
 
 
 void draw_legend(){
-  mvprintw(20,59," LEGENDA");
+  mvprintw(19,59,"LEGENDA");
   mvprintw(20,59, "OK - boss dostepny");
   mvprintw(21,59,"W8 - oczekujemy bossa");
   mvprintw(22,59,"P - podanie");
@@ -111,18 +111,107 @@ void draw_pass(int number){
   refresh();
 }
 
+void draw_office(){
+  int x, y;
+  getmaxyx(stdscr, y, x);
+  for(int i = 0 ; i < x; i++){
+
+    mvprintw(0, x/2 - 8, "OFFICE");
+    mvprintw(1, i, "_");
+    mvprintw(8, i, "_");
+
+  }
+
+  mvprintw(9, x/2 - 10, "BOSS OFFICE ");
+  refresh();
+}
+
 
 void clear_boss(int y, int x){
-  for(int x_clean=21; x_clean<50; x_clean++ ){
-    for(int y_clean=17; y_clean<=25; y_clean++){
-      mvprintw(y_clean,x_clean," ");
-    }
-  }
+
+  for(int i=0; i<45; i++){
+  //przod
+  mvprintw(y,x+2-i-2, "     ");
+  mvprintw(y+1,x+2-i-2, "     ");
+  mvprintw(y+2,x+4-i-2, "     ");
+  mvprintw(y+2,x+1-i-2, "     ");
+  mvprintw(y+2,x+2-i-2, "     ");
+  mvprintw(y+3,x+2-i-2, "     ");
+  mvprintw(y+4,x+4-i-2, "     ");
+  mvprintw(y+4,x+1-i-2, "     ");
+  /// tył
+  mvprintw(y,x+2-i+1, "           ");
+  mvprintw(y+1,x+2-i+1, "       ");
+  mvprintw(y+2,x+4-i+1, "       ");
+  mvprintw(y+2,x+1-i+1, "       ");
+  mvprintw(y+2,x+2-i+1, "       ");
+  mvprintw(y+3,x+2-i+1, "       ");
+  mvprintw(y+4,x+4-i+1, "       ");
+  mvprintw(y+4,x-i+1, "         ");
+  //rysuj
+  mvprintw(y,x+2-i, "/\\");
+  mvprintw(y+1,x+2-i, "\\/");
+  mvprintw(y+2,x+4-i, "\\");
+  mvprintw(y+2,x+1-i, "/");
+  mvprintw(y+2,x+2-i, "||");
+  mvprintw(y+3,x+2-i, "||");
+  mvprintw(y+4,x+4-i, "\\");
+  mvprintw(y+4,x+1-i, "/");
+  usleep(1000*100);
+  refresh();
+}
+  draw_boss_table();
   mvprintw(19,27,"Boss out of office");
   refresh();
 }
 
 void draw_boss(int y, int x){
+  for(int i=0; i<32; i++){
+
+    //przód
+
+    mvprintw(y,x+2+i+9, " ");
+    mvprintw(y+1,x+2+i+9, " ");
+    mvprintw(y+2,x+4+i+9, " ");
+    mvprintw(y+2,x+1+i+9, " ");
+    mvprintw(y+2,x+2+i+9, " ");
+    mvprintw(y+3,x+2+i+9, " ");
+    mvprintw(y+4,x+4+i+9, " ");
+    mvprintw(y+4,x+1+i+9, " ");
+
+    //rysuj
+
+
+    mvprintw(y,x+2+i, "/\\");
+    mvprintw(y+1,x+2+i, "\\/");
+    mvprintw(y+2,x+4+i, "\\");
+    mvprintw(y+2,x+1+i, "/");
+    mvprintw(y+2,x+2+i, "||");
+    mvprintw(y+3,x+2+i, "||");
+    mvprintw(y+4,x+4+i, "\\");
+    mvprintw(y+4,x+1+i, "/");
+
+    //tył
+
+    mvprintw(y,x+2+i-1, " ");
+    mvprintw(y+1,x+2+i-1, " ");
+    mvprintw(y+2,x+4+i-4, " ");
+    mvprintw(y+2,x+1+i-1, " ");
+  //  mvprintw(y+2,x+2+i-1, " ");
+    mvprintw(y+3,x+2+i-1, " ");
+    mvprintw(y+4,x+4+i-1, " ");
+    mvprintw(y+4,x+1+i-1, " ");
+
+    usleep(1000*100);
+    refresh();
+  }
+
+  draw_boss_table();
+  refresh();
+
+}
+
+/*void draw_boss(int y, int x){
 
   for(int x_clean=21; x_clean<50; x_clean++ ){
     for(int y_clean=17; y_clean<=25; y_clean++){
@@ -140,22 +229,9 @@ void draw_boss(int y, int x){
   mvprintw(y+4,x+1, "/");
   refresh();
 
-}
+}*/
 
-void draw_office(){
-  int x, y;
-  getmaxyx(stdscr, y, x);
-  for(int i = 0 ; i < x; i++){
 
-    mvprintw(0, x/2 - 8, "OFFICE");
-    mvprintw(1, i, "_");
-    mvprintw(8, i, "_");
-
-  }
-
-  mvprintw(9, x/2 - 10, "BOSS OFFICE ");
-  refresh();
-}
 
 /*void fill_workers_table(){
 
@@ -178,7 +254,7 @@ void* workers_func(void *args){
 
 
     if(boss.pass>passAmount){
-        place.occupied=true;
+        place.filled=true;
         pthread_cond_broadcast(&iffreeplace);
     }
 
@@ -209,12 +285,12 @@ void* boss_func(void *args){
     mvprintw(0,0,"OK");
     pthread_mutex_unlock(&synchro_pass);
 
-      draw_boss(18,32);
+      draw_boss(18,2);
       howMuchWorkersonHoliday=0;
       howMuchWorkersStand= howMuchWorkersStand+boss.pass;
       usleep(1000*1000);
       clear_boss(18,32);
-      place.occupied=false;
+      place.filled=false;
       boss.pass=0;
       pthread_mutex_unlock(&synchro_worker);
 
@@ -224,12 +300,12 @@ void* boss_func(void *args){
 void* HR_func(void* args){
   while(1){
     pthread_mutex_lock(&synchro_hr);
-    if(place.occupied==false){
+    if(place.filled==false){
       pthread_cond_broadcast(&iffreeplace);
       pthread_mutex_unlock(&synchro_hr);
 
     }
-    if(place.occupied==true){
+    if(place.filled==true){
       pthread_cond_broadcast(&ifbossOnline);
       pthread_mutex_unlock(&synchro_hr);
     }
@@ -255,15 +331,10 @@ clear_boss(18,35);
 pthread_t workers_thread[workerAmount];
 pthread_t boss[workerAmount];
 pthread_t hr;
-//pthread_t boss_offline;
+
 
 
   pthread_create(&hr,NULL,HR_func, NULL);
-
-
-
-
-//  pthread_create(&boss_offline,NULL,boss_off,NULL);
 
 
 for(int i =1; i<=workerAmount; i++){
@@ -271,10 +342,6 @@ for(int i =1; i<=workerAmount; i++){
   pthread_create(&workers_thread[i], NULL, workers_func, NULL);
     pthread_create(&boss[i], NULL, boss_func, NULL);
 }
-
-
-
-
 
 
 
